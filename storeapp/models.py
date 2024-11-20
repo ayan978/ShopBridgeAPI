@@ -90,3 +90,12 @@ class OrderItem(models.Model):
 
     def __str__(self):
         return self.product.name
+
+
+class Profile(models.Model):
+    name = models.CharField(max_length=30)
+    bio = models.TextField()
+    picture = models.ImageField(upload_to = 'img', blank=True, null=True)
+    
+    def __str__(self):
+        return self.name

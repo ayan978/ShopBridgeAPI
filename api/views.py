@@ -26,7 +26,6 @@ class ProductsViewSet(ModelViewSet):
     
     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
     filterset_class = ProductFilter
-    filterset_class = ProductFilter
     search_fields = ['name', 'description']
     ordering_fields = ['old_price']
     pagination_class = PageNumberPagination
@@ -73,3 +72,66 @@ class CartItemViewSet(ModelViewSet):
     
     def get_serializer_context(self):
         return {"cart_id": self.kwargs["cart_pk"]}
+
+
+
+class OrderViewSet(ModelViewSet):
+    
+    http_method_names = ["get", "patch", "post", "delete", "options", "head"]
+    
+    def get_permissions(self):
+        if self.request.method in ["PATCH", "DELETE"]:
+            return [IsAdminUser()]
+        return [IsAuthenticated()]
+            
+    
+    
+    def create(self, request, *args, **kwargs):
+        serializer = CreateOrderSerializer(data=request.data, context={"user_id": self.request.user.id})
+        serializer.is_valid(raise_exception=True)
+        order = serializer.save()
+        serializer = OrderSerializer(order)
+        return Response(serializer.data)
+        
+    
+
+    
+    
+    
+    def get_serializer_class(self):
+        if self.request.method == 'POST':
+            return CreateOrderSerializer
+        elif self.request.method == 'PATCH':
+            return UpdateOrderSerializer
+        return OrderSerializer
+       
+    
+    def get_queryset(self):
+        user = self.request.user
+        if user.is_staff:
+            return Order.objects.all()
+        return Order.objects.filter(owner=user)
+    
+    # def get_serializer_context(self):
+    #     return {"user_id": self.request.user.id}
+            
+        
+
+
+
+class ProfileViewSet(ModelViewSet):
+    queryset = Profile.objects.all()
+    serializer_class = ProfileSerializer
+    parser_classes = (MultiPartParser, FormParser)
+    
+    def create(self, request, *args, **kwargs):
+        name = request.data["name"]
+        bio = request.data["bio"]
+        picture = request.data["picture"]
+        
+        Profile.objects.create(name = name, bio = bio, picture=picture)
+        
+        
+        return Response("Profile created successfully", status=status.HTTP_200_OK)
+    
+
